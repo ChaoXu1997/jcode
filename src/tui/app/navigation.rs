@@ -139,6 +139,25 @@ impl App {
         self.diff_mode.has_side_pane() || self.side_panel.focused_page().is_some()
     }
 
+    /// Returns the effective scroll position for the diff/side pane.
+    ///
+    /// After each render frame, the renderer writes back the clamped scroll
+    /// position via `set_last_diff_pane_effective_scroll`.  We prefer that
+    /// value so that a stored `diff_pane_scroll` that overshot `max_scroll`
+    /// (e.g. `usize::MAX` for auto-scroll-to-bottom) doesn't make subsequent
+    /// scroll-up increments invisible after clamping.
+    ///
+    /// Falls back to `self.diff_pane_scroll` when no render frame has
+    /// occurred yet (e.g. unit tests).
+    fn effective_diff_pane_scroll(&self) -> usize {
+        let rendered = crate::tui::ui::last_diff_pane_effective_scroll();
+        if rendered > 0 || self.diff_pane_scroll == 0 || self.diff_pane_scroll == usize::MAX {
+            rendered
+        } else {
+            self.diff_pane_scroll
+        }
+    }
+
     pub(super) fn set_diff_pane_focus(&mut self, focus: bool) {
         if self.diff_pane_focus == focus {
             return;
@@ -209,19 +228,23 @@ impl App {
 
         match code {
             KeyCode::Char('j') | KeyCode::Down => {
-                self.diff_pane_scroll = self.diff_pane_scroll.saturating_add(line_amount);
+                let base = self.effective_diff_pane_scroll();
+                self.diff_pane_scroll = base.saturating_add(line_amount);
                 self.diff_pane_auto_scroll = false;
             }
             KeyCode::Char('k') | KeyCode::Up => {
-                self.diff_pane_scroll = self.diff_pane_scroll.saturating_sub(line_amount);
+                let base = self.effective_diff_pane_scroll();
+                self.diff_pane_scroll = base.saturating_sub(line_amount);
                 self.diff_pane_auto_scroll = false;
             }
             KeyCode::Char('d') | KeyCode::PageDown => {
-                self.diff_pane_scroll = self.diff_pane_scroll.saturating_add(page_amount);
+                let base = self.effective_diff_pane_scroll();
+                self.diff_pane_scroll = base.saturating_add(page_amount);
                 self.diff_pane_auto_scroll = false;
             }
             KeyCode::Char('u') | KeyCode::PageUp => {
-                self.diff_pane_scroll = self.diff_pane_scroll.saturating_sub(page_amount);
+                let base = self.effective_diff_pane_scroll();
+                self.diff_pane_scroll = base.saturating_sub(page_amount);
                 self.diff_pane_auto_scroll = false;
             }
             KeyCode::Char('g') | KeyCode::Home => {
@@ -356,11 +379,7 @@ impl App {
                 true
             }
             MouseScrollTarget::SidePane => {
-                let current = if self.diff_pane_scroll == usize::MAX {
-                    super::super::ui::last_diff_pane_effective_scroll()
-                } else {
-                    self.diff_pane_scroll
-                };
+                let current = self.effective_diff_pane_scroll();
                 self.diff_pane_scroll = if direction < 0 {
                     current.saturating_sub(1)
                 } else {
@@ -629,7 +648,14 @@ impl App {
                     return true;
                 }
                 KeyCode::Char('l') => {
-                    self.set_diagram_focus(true);
+                    // When the side panel has focused content, Ctrl+L should focus
+                    // the side pane (j/k scroll, h/l pan diagrams) rather than the
+                    // diagram pane, so that j/k scrolling works for side panel text.
+                    if self.side_panel.focused_page().is_some() {
+                        self.set_diff_pane_focus(true);
+                    } else {
+                        self.set_diagram_focus(true);
+                    }
                     return true;
                 }
                 _ => {}

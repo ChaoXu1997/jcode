@@ -64,7 +64,11 @@ impl App {
         let is_tool = message.role == "tool";
         self.display_messages.push(message);
         self.bump_display_messages_version();
-        if is_tool && self.diff_mode.has_side_pane() && self.diff_pane_auto_scroll {
+        if is_tool
+            && (self.diff_mode.has_side_pane()
+                || self.side_panel.focused_page().is_some())
+            && self.diff_pane_auto_scroll
+        {
             self.diff_pane_scroll = usize::MAX;
         }
     }
