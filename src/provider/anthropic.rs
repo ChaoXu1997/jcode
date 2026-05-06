@@ -38,11 +38,23 @@ pub fn is_cache_ttl_1h() -> bool {
     CACHE_TTL_1H.load(Ordering::Relaxed)
 }
 
-/// Anthropic Messages API endpoint
-const API_URL: &str = "https://api.anthropic.com/v1/messages";
+/// Default Anthropic Messages API endpoint
+const DEFAULT_API_URL: &str = "https://api.anthropic.com/v1/messages";
+
+/// Anthropic Messages API endpoint (respects ANTHROPIC_BASE_URL env override)
+fn api_url() -> String {
+    std::env::var("ANTHROPIC_BASE_URL")
+        .map(|base| {
+            let base = base.trim_end_matches('/');
+            format!("{}/v1/messages", base)
+        })
+        .unwrap_or_else(|_| DEFAULT_API_URL.to_string())
+}
 
 /// OAuth endpoint (with beta=true query param)
-const API_URL_OAUTH: &str = "https://api.anthropic.com/v1/messages?beta=true";
+fn api_url_oauth() -> String {
+    format!("{}?beta=true", api_url())
+}
 
 /// User-Agent for OAuth requests, matching the official Claude Code CLI.
 pub(crate) const CLAUDE_CLI_USER_AGENT: &str = "claude-cli/2.1.123 (external, sdk-cli)";
@@ -1335,7 +1347,7 @@ async fn stream_response(
 
     let connect_start = std::time::Instant::now();
     // Build request with appropriate auth headers
-    let url = if is_oauth { API_URL_OAUTH } else { API_URL };
+    let url = if is_oauth { api_url_oauth() } else { api_url() };
 
     let mut req = client
         .post(url)

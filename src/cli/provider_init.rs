@@ -1462,7 +1462,7 @@ async fn init_provider_with_options(
                 let non_interactive = std::env::var("JCODE_NON_INTERACTIVE").is_ok();
                 if non_interactive {
                     anyhow::bail!(
-                        "No credentials configured. Run 'jcode login' or set ANTHROPIC_API_KEY to authenticate."
+                        "No credentials configured. Run 'jcode login' or set ANTHROPIC_API_KEY to authenticate. Set ANTHROPIC_BASE_URL to use a custom endpoint (e.g. Zhipu/GLM Coding Plan)."
                     );
                 }
 
