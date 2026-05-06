@@ -3575,7 +3575,6 @@ dependencies = [
 [[package]]
 name = "mermaid-rs-renderer"
 version = "0.2.0"
-source = "git+https://github.com/1jehuang/mermaid-rs-renderer.git?tag=v0.2.1#01e8304ffc670f04dd4a047595cfb8ea9c854ae7"
 dependencies = [
  "anyhow",
  "clap",
