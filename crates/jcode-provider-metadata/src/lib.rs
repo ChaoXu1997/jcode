@@ -164,7 +164,7 @@ pub const OPENCODE_GO_PROFILE: OpenAiCompatibleProfile = OpenAiCompatibleProfile
 pub const ZAI_PROFILE: OpenAiCompatibleProfile = OpenAiCompatibleProfile {
     id: "zai",
     display_name: "Z.AI",
-    api_base: "https://api.z.ai/api/coding/paas/v4",
+    api_base: "https://open.bigmodel.cn/api/coding/paas/v4",
     api_key_env: "ZHIPU_API_KEY",
     env_file: "zai.env",
     setup_url: "https://docs.z.ai/guides/develop/openai/introduction",
